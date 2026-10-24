@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الدورات</title>
+
+<!-- OneSignal Web SDK v16 (Custom Code setup) -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function (OneSignal) {
+    await OneSignal.init({
+      appId: "YOUR_ONESIGNAL_APP_ID",          // ← حط الـ App ID هنا (Settings > Keys & IDs)
+      // الموقع على مسار فرعي /VV/ (GitHub Pages) فالـ Worker مش في جذر الدومين
+      serviceWorkerPath: "VV/OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/VV/" },
+      autoResubscribe: true,                    // يرجّع الاشتراك لو المستخدم مسح بيانات المتصفح
+      welcomeNotification: { disable: true },   // من غير إشعار ترحيب
+      // لتجربة localhost فقط (وبتطبيق OneSignal منفصل):
+      // allowLocalhostAsSecureOrigin: true,
+    });
+
+    // نافذة الموافقة الأصلية للمتصفح فقط
+    if (OneSignal.Notifications.isPushSupported() && !OneSignal.Notifications.permission) {
+      OneSignal.Notifications.requestPermission();
+    }
+  });
+</script>
+
+<style>
+  :root {
+    --bg: #f3f5f4;
+    --surface: #ffffff;
+    --ink: #17211d;
+    --muted: #5d6b65;
+    --line: #dde3e0;
+    --accent: #1f6f5c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101614;
+      --surface: #18211e;
+      --ink: #e8efec;
+      --muted: #9aaaa3;
+      --line: #28332f;
+      --accent: #4fb89d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI", Tahoma, "Noto Naskh Arabic", system-ui, sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 20px;
+  }
+  h1 { font-size: 1.6rem; margin: 0 0 24px; }
+  .course {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    max-width: 420px;
+  }
+  .thumb {
+    flex: none;
+    width: 84px;
+    height: 84px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 2rem;
+  }
+  .course h2 { font-size: 1.05rem; margin: 0 0 4px; }
+  .course p { margin: 0; color: var(--muted); font-size: .9rem; }
+</style>
+</head>
+<body>
+  <main>
+    <h1>الدورات</h1>
+    <article class="course">
+      <div class="thumb" aria-hidden="true">▶</div>
+      <div>
+        <h2>اسم الكورس</h2>
+        <p>وصف مختصر للكورس يظهر هنا.</p>
+      </div>
+    </article>
+  </main>
+</body>
+</html>
