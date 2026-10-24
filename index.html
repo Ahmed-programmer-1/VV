@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الدورات</title>
+
+<!-- OneSignal Web SDK v16 (Custom Code setup) -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  // ===== وضع التشخيص: غيّر true إلى false لما تخلص =====
+  const DEBUG = true;
+  const APP_ID = "faea3b18-7574-45a6-96f1-dbe1b484017f";
+  let sdkReady = false;
+
+  function dbg(t) {
+    if (!DEBUG) return;
+    const e = document.getElementById("dbg");
+    if (e) e.textContent += t + "\n";
+  }
+  window.addEventListener("error", (ev) => dbg("✖ خطأ في الصفحة: " + ev.message));
+  window.addEventListener("unhandledrejection", (ev) => dbg("✖ خطأ: " + ((ev.reason && ev.reason.message) || ev.reason)));
+  window.addEventListener("load", () => {
+    dbg("1) الصفحة اتحمّلت: " + location.href);
+    setTimeout(() => {
+      if (!sdkReady) {
+        dbg("✖ الـ SDK ما اتحمّلش بعد 5 ثواني (cdn.onesignal.com متحجب أو بطيء)");
+        setNote("الإشعارات مش متاحة دلوقتي. حدّث الصفحة وجرّب تاني.");
+      }
+    }, 5000);
+  });
+
+  // ---- واجهة الزر ----
+  function setNote(t) { const n = document.getElementById("note"); if (n) n.textContent = t; }
+  function setBtn(label, disabled) {
+    const b = document.getElementById("sub");
+    if (!b) return;
+    b.textContent = label;
+    b.disabled = !!disabled;
+  }
+
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function (OneSignal) {
+    sdkReady = true;
+    dbg("2) ✔ الـ SDK اتحمّل");
+    try {
+      await OneSignal.init({
+        appId: APP_ID,
+        serviceWorkerPath: "VV/OneSignalSDKWorker.js",
+        serviceWorkerParam: { scope: "/VV/" },
+        autoResubscribe: true,
+        welcomeNotification: { disable: true },
+      });
+      dbg("3) ✔ init تمام");
+    } catch (e) {
+      dbg("3) ✖ init فشل: " + ((e && e.message) || e));
+      setNote("حصل خطأ في إعداد الإشعارات.");
+      return;
+    }
+
+    // آيفون: لازم الموقع يتضاف للشاشة الرئيسية الأول
+    const isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const standalone = window.navigator.standalone === true ||
+      (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+    if (isiOS && !standalone) {
+      setNote("على الآيفون: اضغط مشاركة ثم «إضافة إلى الشاشة الرئيسية»، وافتح الموقع من الأيقونة، بعدها اضغط الزر.");
+    }
+
+    if (!OneSignal.Notifications.isPushSupported()) {
+      dbg("✖ المتصفح ده مش بيدعم الإشعارات (أو أنت في Incognito/Guest)");
+      setBtn("الإشعارات غير مدعومة في المتصفح ده", true);
+      return;
+    }
+
+    const sub = OneSignal.User.PushSubscription;
+    const refresh = () => {
+      if (Notification.permission === "denied") {
+        setBtn("الإشعارات محظورة", true);
+        setNote("الموقع محظور من إعدادات المتصفح. فعّل الإشعارات للموقع من إعدادات الموقع ثم حدّث الصفحة.");
+      } else if (sub.optedIn) {
+        setBtn("أنت مشترك في الإشعارات ✓", true);
+        setNote("");
+      } else {
+        setBtn("اشترك في الإشعارات", false);
+      }
+    };
+    refresh();
+    dbg("4) إذن الإشعارات الحالي: " + Notification.permission);
+
+    // الاشتراك لازم يبدأ من ضغطة المستخدم (مطلوب في Safari وأحسن في Chrome)
+    document.getElementById("sub").addEventListener("click", async () => {
+      setBtn("جاري التفعيل...", true);
+      try {
+        if (Notification.permission === "default") {
+          await OneSignal.Notifications.requestPermission();
+        }
+        if (Notification.permission === "granted") {
+          await sub.optIn();
+        }
+      } catch (e) {
+        dbg("✖ فشل الاشتراك: " + ((e && e.message) || e));
+      }
+      refresh();
+    });
+
+    OneSignal.Notifications.addEventListener("permissionChange", (p) => { dbg("6) الإذن بقى: " + p); refresh(); });
+    sub.addEventListener("change", (e) => {
+      dbg("7) الاشتراك: id=" + (e.current.id || "-") + " optedIn=" + e.current.optedIn);
+      refresh();
+    });
+    setTimeout(() => dbg("8) حالة الاشتراك: id=" + (sub.id || "لسه مفيش") + " | optedIn=" + sub.optedIn), 4000);
+  });
+</script>
+
+<style>
+  :root {
+    --bg: #f3f5f4; --surface: #ffffff; --ink: #17211d; --muted: #5d6b65;
+    --line: #dde3e0; --accent: #1f6f5c; --accent-ink: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101614; --surface: #18211e; --ink: #e8efec; --muted: #9aaaa3;
+      --line: #28332f; --accent: #4fb89d; --accent-ink: #08130f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Segoe UI", Tahoma, "Noto Naskh Arabic", system-ui, sans-serif;
+    line-height: 1.7; min-height: 100vh;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 48px 20px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+  h1 { font-size: 1.6rem; margin: 0; }
+  #sub {
+    font: inherit; font-weight: 600; cursor: pointer; border: 0; border-radius: 10px;
+    padding: 10px 18px; background: var(--accent); color: var(--accent-ink);
+  }
+  #sub:disabled { opacity: .65; cursor: default; }
+  #sub:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  #note { margin: -8px 0 20px; color: var(--muted); font-size: .9rem; }
+  .course {
+    display: flex; gap: 16px; align-items: center; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px; max-width: 420px;
+  }
+  .thumb {
+    flex: none; width: 84px; height: 84px; border-radius: 10px; background: var(--accent);
+    color: var(--accent-ink); display: grid; place-items: center; font-size: 2rem;
+  }
+  .course h2 { font-size: 1.05rem; margin: 0 0 4px; }
+  .course p { margin: 0; color: var(--muted); font-size: .9rem; }
+</style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>الدورات</h1>
+      <button id="sub" type="button" disabled>جاري التحميل...</button>
+    </header>
+    <p id="note"></p>
+    <article class="course">
+      <div class="thumb" aria-hidden="true">▶</div>
+      <div>
+        <h2>اسم الكورس</h2>
+        <p>وصف مختصر للكورس يظهر هنا.</p>
+      </div>
+    </article>
+  </main>
+  <pre id="dbg" style="max-width:720px;margin:0 auto;padding:12px 20px;white-space:pre-wrap;font:13px/1.8 monospace;color:#9aaaa3;direction:rtl;text-align:right"></pre>
+</body>
+</html>
